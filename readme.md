@@ -1,6 +1,7 @@
 # [Haunted-house](https://haunted-house.kyledlong.com)
 
-
+This haunted-house project was built in the progress of the [Three.js journey](https://threejs-journey.com) course, focusing on gemoetry, materials, lighting, shadows.
+<br>
 
 ## Tech
 
