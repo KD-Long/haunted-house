@@ -16,6 +16,10 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
+//Fog
+const fog = new THREE.Fog(0x262837,5,20)
+scene.fog = fog
+
 /**
  * Textures
  */
@@ -30,10 +34,35 @@ const doorHeight = textureLoader.load('/textures/door/height.jpg')
 const doorNormal = textureLoader.load('/textures/door/normal.jpg')
 const doorMetal = textureLoader.load('/textures/door/metalness.jpg')
 const doorRoughness = textureLoader.load('/textures/door/roughness.jpg')
-//const matcap = textureLoader.load('/textures/matcaps/1.png')
-//const gradient = textureLoader.load('/textures/gradients/3.jpg')
+
+const bricksColor = textureLoader.load('/textures/bricks/color.jpg')
+const bricksAmbientOcclusion = textureLoader.load('/textures/bricks/ambientOcclusion.jpg')
+const bricksNormal = textureLoader.load('/textures/bricks/normal.jpg')
+const bricksRoughness = textureLoader.load('/textures/bricks/roughness.jpg')
+
+const grassColor = textureLoader.load('/textures/grass/color.jpg')
+const grassAmbientOcclusion = textureLoader.load('/textures/grass/ambientOcclusion.jpg')
+const grassNormal = textureLoader.load('/textures/grass/normal.jpg')
+const grassRoughness = textureLoader.load('/textures/grass/roughness.jpg')
+
+grassColor.repeat.set(8,8)
+grassAmbientOcclusion.repeat.set(8,8)
+grassNormal.repeat.set(8,8)
+grassRoughness.repeat.set(8,8)
+
+grassColor.wrapS = THREE.RepeatWrapping
+grassAmbientOcclusion.wrapS = THREE.RepeatWrapping
+grassNormal.wrapS = THREE.RepeatWrapping
+grassRoughness.wrapS = THREE.RepeatWrapping
+
+grassColor.wrapT = THREE.RepeatWrapping
+grassAmbientOcclusion.wrapT = THREE.RepeatWrapping
+grassNormal.wrapT = THREE.RepeatWrapping
+grassRoughness.wrapT = THREE.RepeatWrapping
 
 const material = new THREE.MeshStandardMaterial()
+//door mat
+
 
 
 /**
@@ -42,13 +71,20 @@ const material = new THREE.MeshStandardMaterial()
 
 //axes helper
 const axesHelper = new THREE.AxesHelper( 10 );
-scene.add( axesHelper );
+// scene.add( axesHelper );
 
 // Floor
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 20),
-    new THREE.MeshStandardMaterial({ color: '#a9c388' })
+    new THREE.PlaneGeometry(20, 20,50,50),
+    new THREE.MeshStandardMaterial({ 
+        map:grassColor,
+        aoMap:grassAmbientOcclusion,
+        normalMap:grassNormal,
+        roughnessMap:grassRoughness
+     })
 )
+floor.material.aoMapIntensity=2.5
+floor.geometry.setAttribute('uv2', new THREE.BufferAttribute(floor.geometry.attributes.uv.array,2))
 floor.rotation.x = - Math.PI * 0.5
 floor.position.y = 0
 scene.add(floor)
@@ -63,9 +99,17 @@ const wallHeight= 2.5
 const wallDepth= 4
 const walls = new THREE.Mesh(
     new THREE.BoxGeometry(wallWidth,wallHeight,wallDepth),
-    new THREE.MeshStandardMaterial({color:0xac8e82})
+    new THREE.MeshStandardMaterial({
+        map:bricksColor,
+        aoMap:bricksAmbientOcclusion,
+        normalMap:bricksNormal,
+        roughnessMap:bricksRoughness
+    })
 )
-//console.log(walls)
+walls.material.aoMapIntensity=2.5
+walls.geometry.setAttribute('uv2', new THREE.BufferAttribute(walls.geometry.attributes.uv.array,2))
+gui.add(walls.material,'aoMapIntensity',0.1,10,.1).name('walls AO')
+
 walls.position.y = wallHeight*0.5
 
 house.add(walls)
@@ -82,9 +126,24 @@ house.add(roof)
 
 //door
 const door = new THREE.Mesh(
-    new THREE.PlaneGeometry(2,2),
-    new THREE.MeshStandardMaterial({color:0xffffff})
+    new THREE.PlaneGeometry(2.2,2,50,50),
+    new THREE.MeshStandardMaterial({
+        map:doorColor,
+        transparent:true,
+        alphaMap:doorAlpha,
+        aoMap:doorAmbient,
+        displacementMap:doorHeight,
+        displacementScale:0.1,
+        normalMap:doorNormal,
+        metalnessMap:doorMetal,
+        roughnessMap:doorRoughness
+    })
 )
+
+door.geometry.setAttribute('uv2', new THREE.BufferAttribute(door.geometry.attributes.uv.array,2))
+door.material.aoMapIntensity=2.5
+gui.add(door.material,'aoMapIntensity',0.1,10,.1).name('door AO')
+
 door.position.z = wallWidth/2 +0.001 // to stop z-fighting
 door.position.y = 2/2
 house.add(door)
@@ -144,6 +203,10 @@ for(let i=0;i<50;i++){
     aTomb.rotation.y=(Math.random() -0.5)* 0.4
     aTomb.rotation.z=(Math.random() -0.5)* 0.4
 
+    tomb.castShadow= true
+    tombCap.castShadow = true
+    tomb.receiveShadow= true
+    tombCap.receiveShadow= true
     // remember we define "aTomb" as and indiviual tombstone we still need to and this to the group of tombstones
     tombs.add(aTomb)  
 }
@@ -153,23 +216,54 @@ for(let i=0;i<50;i++){
 /**
  * Lights
  */
+const folder = gui.addFolder( 'Light' );
+
+
 // Ambient light
-const ambientLight = new THREE.AmbientLight('#ffffff', 0.5)
-gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
+const ambientLight = new THREE.AmbientLight('#b9d5ff', 0.12)
+folder.add(ambientLight, 'intensity').min(0).max(1).step(0.001).name( 'amb intensity' )
 scene.add(ambientLight)
 
 // Directional light
-const moonLight = new THREE.DirectionalLight('#ffffff', 0.5)
+const moonLight = new THREE.DirectionalLight('#ffffff', 0.12)
 moonLight.position.set(4, 5, - 2)
 
 const moonLighthelper = new THREE.DirectionalLightHelper(moonLight)
-scene.add(moonLighthelper)
+// scene.add(moonLighthelper)
 
-gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
-gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
-gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
-gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
+folder.add(moonLight, 'intensity').min(0).max(1).step(0.001).name( 'moon intensity' )
+folder.add(moonLight.position, 'x').min(- 5).max(5).step(0.001).name( 'moon x' )
+folder.add(moonLight.position, 'y').min(- 5).max(5).step(0.001).name( 'moon y' )
+folder.add(moonLight.position, 'z').min(- 5).max(5).step(0.001).name( 'moon z' )
 scene.add(moonLight)
+
+
+//door light
+const doorLight= new THREE.PointLight(0xff7d46,1,7)
+doorLight.position.set(0,2.2,2.7)
+house.add(doorLight)
+
+
+
+/**
+ * Ghosts
+ * 
+ */
+
+const ghost1 = new THREE.PointLight(0xff00ff,2,3)
+const g1helper = new THREE.PointLightHelper(ghost1)
+
+
+const ghost2 = new THREE.PointLight(0x00ffff,2,3)
+const g2helper = new THREE.PointLightHelper(ghost2)
+
+const ghost3 = new THREE.PointLight(0xffff00,2,3)
+const g3helper = new THREE.PointLightHelper(ghost3)
+
+scene.add(ghost1,ghost2,ghost3)
+// scene.add(g1helper,g2helper,g3helper)
+ 
+
 
 /**
  * Sizes
@@ -217,6 +311,46 @@ const renderer = new THREE.WebGLRenderer({
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setClearColor(0x262837)
+
+/**
+ * Shadows
+ */
+renderer.shadowMap.enabled= true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
+moonLight.castShadow = true
+doorLight.castShadow = true
+ghost1.castShadow = true
+ghost2.castShadow = true
+ghost3.castShadow = true
+
+walls.castShadow=true
+roof.castShadow=true
+bush1.castShadow=true
+bush2.castShadow=true
+bush3.castShadow=true
+bush4.castShadow=true
+tombs.castShadow=true
+
+floor.receiveShadow = true
+walls.receiveShadow= true
+
+doorLight.shadow.mapSize.width =256
+doorLight.shadow.mapSize.height =256
+doorLight.shadow.mapSize.far =7
+
+ghost1.shadow.mapSize.width =256
+ghost1.shadow.mapSize.height =256
+ghost1.shadow.mapSize.far =7
+
+ghost2.shadow.mapSize.width =256
+ghost2.shadow.mapSize.height =256
+ghost2.shadow.mapSize.far =7
+
+ghost3.shadow.mapSize.width =256
+ghost3.shadow.mapSize.height =256
+ghost3.shadow.mapSize.far =7
 
 /**
  * Animate
@@ -226,6 +360,27 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
+
+
+    //ghost animation
+    const g1Angle = elapsedTime * .5
+    ghost1.position.x = Math.cos(g1Angle) * 4
+    ghost1.position.z = Math.sin(g1Angle) * 4
+    ghost1.position.y = Math.sin(g1Angle*3)
+
+    const g2Angle = -elapsedTime * .3
+    ghost2.position.x = Math.cos(g2Angle) * 5
+    ghost2.position.z = Math.sin(g2Angle) * 5
+    ghost2.position.y = Math.sin(g1Angle*4) + Math.sin(g1Angle*2.5)
+
+    const g3Angle = elapsedTime * .18
+    ghost3.position.x = Math.cos(g3Angle) * (7+ Math.sin(elapsedTime *.32))
+    ghost3.position.z = Math.sin(g3Angle) * (7+ Math.sin(elapsedTime *.5))
+    ghost3.position.y = Math.sin(g1Angle*4) + Math.sin(g1Angle*2.5)
+
+
+
+
 
     // Update controls
     controls.update()

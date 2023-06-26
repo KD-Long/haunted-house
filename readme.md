@@ -1,6 +1,6 @@
 # [Haunted-house](https://haunted-house.kyledlong.com)
 
-This haunted-house project was built in the progress of the [Three.js journey](https://threejs-journey.com) course, focusing on gemoetry, materials, lighting, shadows.
+This haunted-house project was built in the progress of the [Three.js journey](https://threejs-journey.com) course, focusing on gemoetry, materials, lighting and shadows.
 <br>
 
 ## Tech
@@ -16,7 +16,7 @@ This haunted-house project was built in the progress of the [Three.js journey](h
 
 <br>
 
-This project is...
+This project is a basic static website created using HTML, CSS, and JavaScript. For package management and development server, we use npm as the Node Package Manager along with Vite. Our Continuous Integration (CI) process involves automatically building artifacts from the main branch into the build branch whenever changes are pushed. This is achieved through GitHub Actions. Additionally, we have configured a webhook to send a POST request to a specified URL (in our case, Hostinger). As a result, any updates pushed to the main branch will trigger a build and update the production site accordingly.
 
 <br>
 
